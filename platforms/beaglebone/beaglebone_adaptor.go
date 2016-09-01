@@ -21,6 +21,7 @@ var _ gpio.DigitalReader = (*BeagleboneAdaptor)(nil)
 var _ gpio.DigitalWriter = (*BeagleboneAdaptor)(nil)
 var _ gpio.AnalogReader = (*BeagleboneAdaptor)(nil)
 var _ gpio.PwmWriter = (*BeagleboneAdaptor)(nil)
+var _ gpio.PwmDirectWriter = (*BeagleboneAdaptor)(nil)
 var _ gpio.ServoWriter = (*BeagleboneAdaptor)(nil)
 
 var _ i2c.I2c = (*BeagleboneAdaptor)(nil)
@@ -210,6 +211,16 @@ func (b *BeagleboneAdaptor) ServoWrite(pin string, val byte) (err error) {
 	period := 16666666.0
 	duty := (gobot.FromScale(float64(val), 0, 180.0) * 0.115) + 0.05
 	return b.pwmPins[i].pwmWrite(strconv.Itoa(int(period)), strconv.Itoa(int(period*duty)))
+}
+
+// PwmDirectWrite writes the period and duty (in ns) for the pwm. It is an
+// error for duty to be greater than period.
+func (b *BeagleboneAdaptor) PwmDirectWrite(pin string, period, duty int) (err error) {
+	i, err := b.pwmPin(pin)
+	if err != nil {
+		return err
+	}
+	return b.pwmPins[i].pwmWrite(strconv.Itoa(int(period)), strconv.Itoa(int(duty)))
 }
 
 // DigitalRead returns a digital value from specified pin

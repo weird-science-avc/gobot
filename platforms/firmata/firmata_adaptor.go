@@ -1,6 +1,7 @@
 package firmata
 
 import (
+	"errors"
 	"io"
 	"strconv"
 	"time"
@@ -18,6 +19,7 @@ var _ gpio.DigitalReader = (*FirmataAdaptor)(nil)
 var _ gpio.DigitalWriter = (*FirmataAdaptor)(nil)
 var _ gpio.AnalogReader = (*FirmataAdaptor)(nil)
 var _ gpio.PwmWriter = (*FirmataAdaptor)(nil)
+var _ gpio.PwmDirectWriter = (*FirmataAdaptor)(nil)
 var _ gpio.ServoWriter = (*FirmataAdaptor)(nil)
 
 var _ i2c.I2c = (*FirmataAdaptor)(nil)
@@ -147,6 +149,13 @@ func (f *FirmataAdaptor) PwmWrite(pin string, level byte) (err error) {
 	}
 	err = f.board.AnalogWrite(p, int(level))
 	return
+}
+
+// PwmDirectWrite writes the period and duty (in ns) for the pwm. It is an
+// error for duty to be greater than period.
+func (f *FirmataAdaptor) PwmDirectWrite(pin string, period, duty int) (err error) {
+	// TODO(ppg): make custom firmata firmware that supports writeMicrosecond and call here
+	return errors.New("unsupported")
 }
 
 // DigitalWrite writes a value to the pin. Acceptable values are 1 or 0.

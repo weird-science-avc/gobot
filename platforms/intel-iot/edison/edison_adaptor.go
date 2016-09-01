@@ -17,6 +17,8 @@ var _ gpio.DigitalReader = (*EdisonAdaptor)(nil)
 var _ gpio.DigitalWriter = (*EdisonAdaptor)(nil)
 var _ gpio.AnalogReader = (*EdisonAdaptor)(nil)
 var _ gpio.PwmWriter = (*EdisonAdaptor)(nil)
+var _ gpio.PwmDirectWriter = (*EdisonAdaptor)(nil)
+var _ gpio.ServoWriter = (*EdisonAdaptor)(nil)
 
 var _ i2c.I2c = (*EdisonAdaptor)(nil)
 
@@ -285,7 +287,7 @@ func (e *EdisonAdaptor) Finalize() (errs []error) {
 	}
 	for _, pin := range e.pwmPins {
 		if pin != nil {
-			if err := pin.enable("0"); err != nil {
+			if err := pin.enable(false); err != nil {
 				errs = append(errs, err)
 			}
 			if err := pin.unexport(); err != nil {
@@ -399,37 +401,62 @@ func (e *EdisonAdaptor) DigitalWrite(pin string, val byte) (err error) {
 	return sysfsPin.Write(int(val))
 }
 
-// PwmWrite writes the 0-254 value to the specified pin
-func (e *EdisonAdaptor) PwmWrite(pin string, val byte) (err error) {
+func (e *EdisonAdaptor) tryPreparePwmPin(pin string) (*sysfsPin, error) {
 	sysPin := sysfsPinMap[pin]
-	if sysPin.pwmPin != -1 {
-		if e.pwmPins[sysPin.pwmPin] == nil {
-			if err = e.DigitalWrite(pin, 1); err != nil {
-				return
-			}
-			if err = changePinMode(strconv.Itoa(int(sysPin.pin)), "1"); err != nil {
-				return
-			}
-			e.pwmPins[sysPin.pwmPin] = newPwmPin(sysPin.pwmPin)
-			if err = e.pwmPins[sysPin.pwmPin].export(); err != nil {
-				return
-			}
-			if err = e.pwmPins[sysPin.pwmPin].enable("1"); err != nil {
-				return
-			}
-		}
-		p, err := e.pwmPins[sysPin.pwmPin].period()
-		if err != nil {
-			return err
-		}
-		period, err := strconv.Atoi(p)
-		if err != nil {
-			return err
-		}
-		duty := gobot.FromScale(float64(val), 0, 255.0)
-		return e.pwmPins[sysPin.pwmPin].writeDuty(strconv.Itoa(int(float64(period) * duty)))
+	if sysPin.pwmPin == -1 {
+		return nil, errors.New("Not a PWM pin")
 	}
-	return errors.New("Not a PWM pin")
+
+	if e.pwmPins[sysPin.pwmPin] != nil {
+		// Already prepared
+		return &sysPin, nil
+	}
+
+	// Not prepared, setup
+	if err := e.DigitalWrite(pin, 1); err != nil {
+		return nil, err
+	}
+	if err := changePinMode(strconv.Itoa(int(sysPin.pin)), "1"); err != nil {
+		return nil, err
+	}
+	e.pwmPins[sysPin.pwmPin] = newPwmPin(sysPin.pwmPin)
+	if err := e.pwmPins[sysPin.pwmPin].export(); err != nil {
+		return nil, err
+	}
+	if err := e.pwmPins[sysPin.pwmPin].enable(true); err != nil {
+		return nil, err
+	}
+	return &sysPin, nil
+}
+
+// PwmWrite writes the 0-254 value to the specified pin
+func (e *EdisonAdaptor) PwmWrite(pin string, val byte) error {
+	// Fix period to match beaglebone for PwmWrite
+	period := 500000.0
+	// Duty is straight linear mapping from 0% to 100%
+	duty := gobot.FromScale(float64(val), 0, 255.0)
+	// Write out to pin direct
+	return e.PwmDirectWrite(pin, int(period), int(period*duty))
+}
+
+// ServoWrite writes the 0-180 degree val to the specified pin.
+func (e *EdisonAdaptor) ServoWrite(pin string, val byte) error {
+	// Fix period to match beaglebone for ServoWrite
+	period := 16666666.0
+	// Duty matches beaglebone, which is (I think) derived from arduino's Servo.Write which targets 1000us to 2000us (out of 20ms period, so 5% to 10%)
+	duty := (gobot.FromScale(float64(val), 0, 180.0) * 0.115) + 0.05
+	// Write out to pin direct
+	return e.PwmDirectWrite(pin, int(period), int(period*duty))
+}
+
+// PwmDirectWrite writes the period and duty (in ns) for the pwm. It is an
+// error for duty to be greater than period.
+func (e *EdisonAdaptor) PwmDirectWrite(pin string, period, duty int) (err error) {
+	sysPin, err := e.tryPreparePwmPin(pin)
+	if err != nil {
+		return err
+	}
+	return e.pwmPins[sysPin.pwmPin].pwmWrite(period, duty)
 }
 
 // AnalogRead returns value from analog reading of specified pin
