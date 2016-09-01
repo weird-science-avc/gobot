@@ -46,6 +46,12 @@ type PwmWriter interface {
 	PwmWrite(string, byte) (err error)
 }
 
+// PwmDirectWriter interface represents an Adaptor which has Pwm direct (period and duty in nanoseconds) capabilities
+type PwmDirectWriter interface {
+	gobot.Adaptor
+	PwmDirectWrite(pin string, period, duty int) error
+}
+
 // ServoWriter interface represents an Adaptor which has Servo capabilities
 type ServoWriter interface {
 	gobot.Adaptor

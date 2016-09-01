@@ -200,6 +200,16 @@ func (b *BeagleboneAdaptor) ServoWrite(pin string, val byte) (err error) {
 	return b.pwmPins[i].pwmWrite(strconv.Itoa(int(period)), strconv.Itoa(int(period*duty)))
 }
 
+// PwmDirectWrite writes the period and duty (in ns) for the pwm. It is an
+// error for duty to be greater than period.
+func (b *BeagleboneAdaptor) PwmDirectWrite(pin string, period, duty int) (err error) {
+	i, err := b.pwmPin(pin)
+	if err != nil {
+		return err
+	}
+	return b.pwmPins[i].pwmWrite(strconv.Itoa(int(period)), strconv.Itoa(int(duty)))
+}
+
 // DigitalRead returns a digital value from specified pin
 func (b *BeagleboneAdaptor) DigitalRead(pin string) (val int, err error) {
 	sysfsPin, err := b.digitalPin(pin, sysfs.IN)
