@@ -9,6 +9,8 @@ import (
 	"github.com/hybridgroup/gobot/gobottest"
 )
 
+var _ gobot.Driver = (*AnalogSensorDriver)(nil)
+
 func TestAnalogSensorDriver(t *testing.T) {
 	d := NewAnalogSensorDriver(newGpioTestAdaptor("adaptor"), "bot", "1")
 	gobottest.Assert(t, d.Name(), "bot")
@@ -39,7 +41,7 @@ func TestAnalogSensorDriverStart(t *testing.T) {
 	gobottest.Assert(t, len(d.Start()), 0)
 
 	// data was received
-	gobot.Once(d.Event(Data), func(data interface{}) {
+	d.Once(d.Event(Data), func(data interface{}) {
 		gobottest.Assert(t, data.(int), 100)
 		sem <- true
 	})
@@ -56,7 +58,7 @@ func TestAnalogSensorDriverStart(t *testing.T) {
 	}
 
 	// read error
-	gobot.Once(d.Event(Error), func(data interface{}) {
+	d.Once(d.Event(Error), func(data interface{}) {
 		gobottest.Assert(t, data.(error).Error(), "read error")
 		sem <- true
 	})
@@ -73,7 +75,7 @@ func TestAnalogSensorDriverStart(t *testing.T) {
 	}
 
 	// send a halt message
-	gobot.Once(d.Event(Data), func(data interface{}) {
+	d.Once(d.Event(Data), func(data interface{}) {
 		sem <- true
 	})
 

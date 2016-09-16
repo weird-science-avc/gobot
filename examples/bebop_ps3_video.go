@@ -56,7 +56,7 @@ func main() {
 	gbot := gobot.NewGobot()
 
 	joystickAdaptor := joystick.NewJoystickAdaptor("ps3")
-	joystick := joystick.NewJoystickDriver(joystickAdaptor,
+	stick := joystick.NewJoystickDriver(joystickAdaptor,
 		"ps3",
 		"./platforms/joystick/configs/dualshock3.json",
 	)
@@ -71,7 +71,7 @@ func main() {
 			for {
 				if _, err := video.Write(<-drone.Video()); err != nil {
 					fmt.Println(err)
-          return
+					return
 				}
 			}
 		}()
@@ -82,7 +82,7 @@ func main() {
 
 		recording := false
 
-		gobot.On(joystick.Event("circle_press"), func(data interface{}) {
+		stick.On(joystick.CirclePress, func(data interface{}) {
 			if recording {
 				drone.StopRecording()
 			} else {
@@ -91,35 +91,35 @@ func main() {
 			recording = !recording
 		})
 
-		gobot.On(joystick.Event("square_press"), func(data interface{}) {
+		stick.On(joystick.SquarePress, func(data interface{}) {
 			drone.HullProtection(true)
 			drone.TakeOff()
 		})
-		gobot.On(joystick.Event("triangle_press"), func(data interface{}) {
+		stick.On(joystick.TrianglePress, func(data interface{}) {
 			drone.Stop()
 		})
-		gobot.On(joystick.Event("x_press"), func(data interface{}) {
+		stick.On(joystick.XPress, func(data interface{}) {
 			drone.Land()
 		})
-		gobot.On(joystick.Event("left_x"), func(data interface{}) {
+		stick.On(joystick.LeftX, func(data interface{}) {
 			val := float64(data.(int16))
 			if leftStick.x != val {
 				leftStick.x = val
 			}
 		})
-		gobot.On(joystick.Event("left_y"), func(data interface{}) {
+		stick.On(joystick.LeftY, func(data interface{}) {
 			val := float64(data.(int16))
 			if leftStick.y != val {
 				leftStick.y = val
 			}
 		})
-		gobot.On(joystick.Event("right_x"), func(data interface{}) {
+		stick.On(joystick.RightX, func(data interface{}) {
 			val := float64(data.(int16))
 			if rightStick.x != val {
 				rightStick.x = val
 			}
 		})
-		gobot.On(joystick.Event("right_y"), func(data interface{}) {
+		stick.On(joystick.RightY, func(data interface{}) {
 			val := float64(data.(int16))
 			if rightStick.y != val {
 				rightStick.y = val
@@ -167,7 +167,7 @@ func main() {
 
 	robot := gobot.NewRobot("bebop",
 		[]gobot.Connection{joystickAdaptor, bebopAdaptor},
-		[]gobot.Device{joystick, drone},
+		[]gobot.Device{stick, drone},
 		work,
 	)
 

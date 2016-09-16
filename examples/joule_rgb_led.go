@@ -1,31 +1,31 @@
 package main
 
 import (
-	"os"
 	"time"
 
 	"github.com/hybridgroup/gobot"
-	"github.com/hybridgroup/gobot/platforms/ble"
+	"github.com/hybridgroup/gobot/platforms/gpio"
+	"github.com/hybridgroup/gobot/platforms/intel-iot/joule"
 )
 
 func main() {
 	gbot := gobot.NewGobot()
 
-	bleAdaptor := ble.NewBLEClientAdaptor("ble", os.Args[1])
-	ollie := ble.NewSpheroOllieDriver(bleAdaptor, "ollie")
+	e := joule.NewJouleAdaptor("joule")
+	led := gpio.NewRgbLedDriver(e, "led", "25", "27", "29")
 
 	work := func() {
 		gobot.Every(1*time.Second, func() {
 			r := uint8(gobot.Rand(255))
 			g := uint8(gobot.Rand(255))
 			b := uint8(gobot.Rand(255))
-			ollie.SetRGB(r, g, b)
+			led.SetRGB(r, g, b)
 		})
 	}
 
-	robot := gobot.NewRobot("ollieBot",
-		[]gobot.Connection{bleAdaptor},
-		[]gobot.Device{ollie},
+	robot := gobot.NewRobot("rgbBot",
+		[]gobot.Connection{e},
+		[]gobot.Device{led},
 		work,
 	)
 

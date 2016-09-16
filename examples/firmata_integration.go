@@ -1,8 +1,8 @@
 package main
 
 import (
-	"time"
 	"fmt"
+	"time"
 
 	"github.com/hybridgroup/gobot"
 	"github.com/hybridgroup/gobot/platforms/firmata"
@@ -25,15 +25,15 @@ func main() {
 		gobot.Every(2*time.Second, func() {
 			led2.Toggle()
 		})
-		gobot.On(button.Event("push"), func(data interface{}) {
+		button.On(gpio.ButtonPush, func(data interface{}) {
 			led2.On()
 		})
-		gobot.On(button.Event("release"), func(data interface{}) {
+		button.On(gpio.ButtonRelease, func(data interface{}) {
 			led2.Off()
 		})
-		gobot.On(sensor.Event("data"), func(data interface{}) {
+		sensor.On(gpio.Data, func(data interface{}) {
 			fmt.Println("sensor", data)
-		})		
+		})
 	}
 
 	robot := gobot.NewRobot("bot",

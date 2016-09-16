@@ -24,7 +24,7 @@ type firmataBoard interface {
 	I2cWrite(int, []byte) error
 	I2cConfig(int) error
 	ServoConfig(int, int, int) error
-	Event(string) *gobot.Event
+	Event(string) string
 }
 
 // FirmataAdaptor is the Gobot Adaptor for Firmata based boards
@@ -34,6 +34,7 @@ type FirmataAdaptor struct {
 	board  firmataBoard
 	conn   io.ReadWriteCloser
 	openSP func(port string) (io.ReadWriteCloser, error)
+	gobot.Eventer
 }
 
 // NewFirmataAdaptor returns a new FirmataAdaptor with specified name and optionally accepts:
@@ -54,6 +55,7 @@ func NewFirmataAdaptor(name string, args ...interface{}) *FirmataAdaptor {
 		openSP: func(port string) (io.ReadWriteCloser, error) {
 			return serial.OpenPort(&serial.Config{Name: port, Baud: 57600})
 		},
+		Eventer: gobot.NewEventer(),
 	}
 
 	for _, arg := range args {
@@ -238,7 +240,7 @@ func (f *FirmataAdaptor) I2cRead(address int, size int) (data []byte, err error)
 		return
 	}
 
-	gobot.Once(f.board.Event("I2cReply"), func(data interface{}) {
+	f.Once(f.board.Event("I2cReply"), func(data interface{}) {
 		ret <- data.(client.I2cReply).Data
 	})
 

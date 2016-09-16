@@ -15,11 +15,11 @@ func main() {
 	button := gpio.NewButtonDriver(chipAdaptor, "button", "XIO-P0")
 
 	work := func() {
-		gobot.On(button.Event("push"), func(data interface{}) {
+		button.On(gpio.ButtonPush, func(data interface{}) {
 			fmt.Println("button pressed")
 		})
 
-		gobot.On(button.Event("release"), func(data interface{}) {
+		button.On(gpio.ButtonRelease, func(data interface{}) {
 			fmt.Println("button released")
 		})
 	}

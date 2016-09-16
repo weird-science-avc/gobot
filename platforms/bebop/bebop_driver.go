@@ -4,6 +4,11 @@ import (
 	"github.com/hybridgroup/gobot"
 )
 
+const (
+	// Flying event
+	Flying = "flying"
+)
+
 // BebopDriver is gobot.Driver representation for the Bebop
 type BebopDriver struct {
 	name       string
@@ -18,7 +23,7 @@ func NewBebopDriver(connection *BebopAdaptor, name string) *BebopDriver {
 		connection: connection,
 		Eventer:    gobot.NewEventer(),
 	}
-	d.AddEvent("flying")
+	d.AddEvent(Flying)
 	return d
 }
 
@@ -45,7 +50,7 @@ func (a *BebopDriver) Halt() (errs []error) {
 
 // TakeOff makes the drone start flying
 func (a *BebopDriver) TakeOff() {
-	gobot.Publish(a.Event("flying"), a.adaptor().drone.TakeOff())
+	a.Publish(a.Event("flying"), a.adaptor().drone.TakeOff())
 }
 
 // Land causes the drone to land
